@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024 Intel Corporation
+# Copyright 2024 Kyunghee University
 
 name: Master workflow
 on:
@@ -17,7 +18,7 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - name: Build
-        run: go build -o build/_output/onos-mlb ./cmd/onos-mlb
+        run: make build
 
   lint:
     runs-on: ubuntu-latest
@@ -26,10 +27,10 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
-      - uses: golangci/golangci-lint-action@v3.7.0
+      - uses: golangci/golangci-lint-action@v6
         with:
           version: latest
-          args: -v --config ./.golangci.yml
+          args: -v --config .golangci.yml --timeout=15m
 
   unit-tests:
     runs-on: ubuntu-latest
@@ -39,9 +40,7 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - name: Unit tests
-        run: |
-          go test -race github.com/onosproject/onos-mlb/pkg/...
-          go test -race github.com/onosproject/onos-mlb/cmd/...
+        run: make test
 
   docker-build:
     runs-on: ubuntu-latest
@@ -51,25 +50,20 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - name: Build Docker image
-        run: |
-          git clone https://github.com/onosproject/build-tools.git build/build-tools
-          go mod vendor
-          docker build . -f build/onos-mlb/Dockerfile -t onosproject/onos-mlb:latest
-          rm -rf vendor
+        run: make images
 
   license-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: reuse lint
-        uses: fsfe/reuse-action@v2
+        uses: fsfe/reuse-action@v3
 
   fossa-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
- 
       - name: FOSSA scan
-        uses: fossas/fossa-action@main
+        uses: fossa-contrib/fossa-action@v3
         with:
-          api-key: ${{secrets.fossaApiKey}}
+          fossa-api-key: 6d304c09a3ec097ba4517724e4a4d17d
